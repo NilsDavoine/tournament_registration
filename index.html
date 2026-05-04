@@ -261,7 +261,7 @@ input,select,textarea{background:var(--bg3);border:1px solid var(--border);color
 
         <div class="actions">
           <button type="button" class="btn btn-n" onclick="clearForm()">Clear</button>
-          <button id="submit-btn" type="submit" class="btn btn-y">Submit registration</button>
+          <button id="submit-btn" type="button" class="btn btn-y" onclick="submitRegistration()">Submit registration</button>
         </div>
         <div id="msg" class="msg"></div>
       </form>
@@ -368,13 +368,8 @@ function validateRegistrationForm(){
   return true;
 }
 
-$('submit-btn').addEventListener('click',()=>{
-  console.log('Submit button clicked');
-});
-
-$('reg-form').addEventListener('submit',async ev=>{
-  ev.preventDefault();
-  console.log('Form submit event triggered');
+async function submitRegistration(){
+  console.log('Submit button clicked: submitRegistration() started');
 
   if($('website').value){
     console.warn('Submission blocked by honeypot field.');
@@ -385,6 +380,7 @@ $('reg-form').addEventListener('submit',async ev=>{
 
   const payload=buildPayload();
   const btn=$('submit-btn');
+
   btn.disabled=true;
   btn.textContent='Submitting...';
   showMsg('Submitting registration...', 'ok');
@@ -414,6 +410,15 @@ $('reg-form').addEventListener('submit',async ev=>{
   }finally{
     btn.disabled=false;
     btn.textContent='Submit registration';
+  }
+}
+
+window.addEventListener('error', function(e){
+  console.error('Page error:', e.message, e.filename, e.lineno);
+  const msg=document.getElementById('msg');
+  if(msg){
+    msg.textContent='Page error: '+e.message;
+    msg.className='msg err';
   }
 });
 
