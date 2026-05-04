@@ -417,14 +417,24 @@ async function testGoogleSheetConnection(){
 }
 
 async function submitRegistration(){
-  console.log('Submit button clicked: submitRegistration() started');
+  console.log('Submit registration clicked');
 
-  if($('website').value){
-    console.warn('Submission blocked by honeypot field.');
+  const entries=getSelectedEntries();
+  const missing=[];
+
+  if(!$('lastName').value.trim()) missing.push('Last name');
+  if(!$('firstName').value.trim()) missing.push('First name');
+  if(!$('email').value.trim()) missing.push('Email');
+  if($('email').value.trim() && !$('email').checkValidity()) missing.push('Valid email address');
+  if(!$('country').value) missing.push('Country');
+  if(entries.length===0) missing.push('At least one category / arm');
+  if(!$('terms').checked) missing.push('Tournament registration terms');
+
+  if(missing.length){
+    showMsg('Please complete: '+missing.join(', ')+'.', 'err');
+    console.warn('Submission blocked. Missing:', missing);
     return;
   }
-
-  if(!validateRegistrationForm()) return;
 
   const payload=buildPayload();
   const btn=$('submit-btn');
@@ -437,24 +447,21 @@ async function submitRegistration(){
   console.log('PAYLOAD:', payload);
 
   try{
-    if(!GOOGLE_SCRIPT_URL){
-      showMsg('Test mode: registration is valid. Add the Google Apps Script URL in the HTML to send it to a Google Sheet.', 'ok');
-      console.log('Registration payload:', payload);
-    }else{
-      await fetch(GOOGLE_SCRIPT_URL,{
-        method:'POST',
-        mode:'no-cors',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify(payload)
-      });
+    await fetch(GOOGLE_SCRIPT_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    });
 
-      showMsg('Registration sent. Please check the Google Sheet row.', 'ok');
-      $('reg-form').reset();
-      $('country').value='LU';
-    }
+    showMsg('Registration sent successfully. Please check the Google Sheet.', 'ok');
+    alert('Registration sent. Check the Google Sheet.');
+    $('reg-form').reset();
+    $('country').value='LU';
   }catch(err){
     console.error('Submission error:', err);
-    showMsg('Could not submit the registration. Check the browser console and Apps Script deployment.', 'err');
+    showMsg('Could not submit the registration: '+err.message, 'err');
+    alert('Submission error: '+err.message);
   }finally{
     btn.disabled=false;
     btn.textContent='Submit registration';
