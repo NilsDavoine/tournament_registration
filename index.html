@@ -259,6 +259,15 @@ input,select,textarea{background:var(--bg3);border:1px solid var(--border);color
           <label for="marketing">I allow the organisers to send me emails about future club events.<small>This is optional and can be left unchecked.</small></label>
         </div>
 
+
+        <div class="consent" style="border-color:rgba(58,140,255,.35);background:rgba(58,140,255,.06)">
+          <label style="width:100%">
+            Debug test
+            <small>Use this button to test whether the page can write one simple test row to Google Sheets.</small>
+            <button type="button" class="btn btn-n" style="margin-top:10px" onclick="testGoogleSheetConnection()">Test Google Sheet connection</button>
+          </label>
+        </div>
+
         <div class="actions">
           <button type="button" class="btn btn-n" onclick="clearForm()">Clear</button>
           <button id="submit-btn" type="button" class="btn btn-y" onclick="submitRegistration()">Submit registration</button>
@@ -368,6 +377,45 @@ function validateRegistrationForm(){
   return true;
 }
 
+
+async function testGoogleSheetConnection(){
+  alert('Test button clicked. Sending test row...');
+  console.log('TEST GOOGLE SHEET BUTTON CLICKED');
+  console.log('GOOGLE_SCRIPT_URL:', GOOGLE_SCRIPT_URL);
+
+  try{
+    const testPayload={
+      timestamp:new Date().toISOString(),
+      firstName:'TEST',
+      lastName:'DEBUG',
+      email:'test@example.com',
+      clubName:'TEST CLUB',
+      clubContact:'TEST CONTACT',
+      countryCode:'LU',
+      countryName:'Luxembourg',
+      entries:[{cid:0,arm:'left',category:'Amateurs -75kg'}],
+      categoriesHuman:'Amateurs -75kg (LEFT)',
+      acceptedTerms:true,
+      marketingConsent:false,
+      suggestions:'Debug connection test'
+    };
+
+    await fetch(GOOGLE_SCRIPT_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(testPayload)
+    });
+
+    alert('Request sent. Now check the Google Sheet.');
+    showMsg('Debug request sent. Check the Google Sheet.', 'ok');
+  }catch(err){
+    console.error('Debug test failed:', err);
+    alert('Debug test failed: '+err.message);
+    showMsg('Debug test failed: '+err.message, 'err');
+  }
+}
+
 async function submitRegistration(){
   console.log('Submit button clicked: submitRegistration() started');
 
@@ -424,6 +472,11 @@ window.addEventListener('error', function(e){
 
 initCountries();
 initCategories();
+
+window.testGoogleSheetConnection = testGoogleSheetConnection;
+window.submitRegistration = submitRegistration;
+window.clearForm = clearForm;
+
 </script>
 </body>
 </html>
