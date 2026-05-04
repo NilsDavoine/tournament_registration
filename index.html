@@ -229,7 +229,7 @@ input,select,textarea{background:var(--bg3);border:1px solid var(--border);color
   <main class="main">
     <section class="form-card">
       <div class="section-title">Player information</div>
-      <form id="reg-form">
+      <form id="reg-form" novalidate>
         <input class="hp" id="website" name="website" autocomplete="off" tabindex="-1">
         <div class="g2">
           <div class="fg"><lbl>Last Name *</lbl><input id="lastName" name="lastName" required placeholder="SMITH" oninput="this.value=this.value.toUpperCase()"></div>
@@ -350,32 +350,75 @@ function buildPayload(){
     suggestions:$('suggestions').value.trim()
   };
 }
+function validateRegistrationForm(){
+  const missing=[];
+  if(!$('lastName').value.trim()) missing.push('Last name');
+  if(!$('firstName').value.trim()) missing.push('First name');
+  if(!$('email').value.trim()) missing.push('Email');
+  if($('email').value.trim() && !$('email').checkValidity()) missing.push('Valid email address');
+  if(!$('country').value) missing.push('Country');
+  if(getSelectedEntries().length===0) missing.push('At least one category / arm');
+  if(!$('terms').checked) missing.push('Tournament registration terms');
+
+  if(missing.length){
+    showMsg('Please complete: '+missing.join(', ')+'.', 'err');
+    console.warn('Registration blocked. Missing fields:', missing);
+    return false;
+  }
+  return true;
+}
+
+$('submit-btn').addEventListener('click',()=>{
+  console.log('Submit button clicked');
+});
+
 $('reg-form').addEventListener('submit',async ev=>{
   ev.preventDefault();
-  if($('website').value) return;
-  const entries=getSelectedEntries();
-  if(entries.length===0){showMsg('Please select at least one category / arm.', 'err');return;}
-  if(!$('terms').checked){showMsg('Please accept the registration terms before submitting.', 'err');return;}
+  console.log('Form submit event triggered');
+
+  if($('website').value){
+    console.warn('Submission blocked by honeypot field.');
+    return;
+  }
+
+  if(!validateRegistrationForm()) return;
+
   const payload=buildPayload();
   const btn=$('submit-btn');
-  btn.disabled=true;btn.textContent='Submitting...';
+  btn.disabled=true;
+  btn.textContent='Submitting...';
+  showMsg('Submitting registration...', 'ok');
+
+  console.log('SENDING TO:', GOOGLE_SCRIPT_URL);
+  console.log('PAYLOAD:', payload);
+
   try{
     if(!GOOGLE_SCRIPT_URL){
-      console.log('Registration payload:', payload);
       showMsg('Test mode: registration is valid. Add the Google Apps Script URL in the HTML to send it to a Google Sheet.', 'ok');
+      console.log('Registration payload:', payload);
     }else{
-      await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-      showMsg('Registration submitted. Thank you.', 'ok');
-      $('reg-form').reset();$('country').value='LU';
+      await fetch(GOOGLE_SCRIPT_URL,{
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify(payload)
+      });
+
+      showMsg('Registration sent. Please check the Google Sheet row.', 'ok');
+      $('reg-form').reset();
+      $('country').value='LU';
     }
   }catch(err){
-    console.error(err);
-    showMsg('Could not submit the registration. Please try again or contact the organizer.', 'err');
+    console.error('Submission error:', err);
+    showMsg('Could not submit the registration. Check the browser console and Apps Script deployment.', 'err');
   }finally{
-    btn.disabled=false;btn.textContent='Submit registration';
+    btn.disabled=false;
+    btn.textContent='Submit registration';
   }
 });
-initCountries();initCategories();
+
+initCountries();
+initCategories();
 </script>
 </body>
 </html>
